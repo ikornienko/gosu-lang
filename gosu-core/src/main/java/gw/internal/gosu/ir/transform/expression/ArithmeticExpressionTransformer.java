@@ -55,12 +55,7 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
     {
       if( isPrimitiveArithmetic() )
       {
-        DynamicFunctionSymbol currentFunction = _cc().getCurrentFunction();
-        if(true && currentFunction != null && !"hashCode()".equals( currentFunction.getName() ) ) {
-          return primitiveSafeArithmetic();
-        } else {
-          return primitiveArithmetic();
-        }
+        return primitiveArithmetic();
       }
       else {
         IType lhsType = _expr().getLHS().getType();
@@ -167,7 +162,7 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
         compExpr.addElement( buildAssignment( rhsPrim, numberConvert( rhsExpr.getType(), primitiveType, identifier( tempRhs ) ) ) );
       }
 
-      IRExpression expr = new IRArithmeticExpression( getDescriptor( primitiveType ), identifier( lhsPrim ), identifier( rhsPrim ), IRArithmeticExpression.Operation.fromString( strOp ) );
+      IRExpression expr = makeIRArithmeticExpression( primitiveType , identifier( lhsPrim ), identifier( rhsPrim ), isCheckedArithmeticEnabled() );
       if( StandardCoercionManager.isBoxed( exprType ) ) {
         expr = boxValueToType( exprType, expr );
       }
@@ -191,7 +186,7 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
       }
       rhs = numberConvert( rhs.getType(), getDescriptor( primitiveType ), rhs );
 
-      IRExpression expr = new IRArithmeticExpression( getDescriptor( primitiveType ), lhs, rhs, IRArithmeticExpression.Operation.fromString( strOp ) );
+      IRExpression expr = makeIRArithmeticExpression( primitiveType , lhs, rhs, isCheckedArithmeticEnabled() );
       if( StandardCoercionManager.isBoxed( exprType ) ) {
         expr = boxValueToType( exprType, expr );
       }
@@ -343,21 +338,14 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
     IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
     rhs = numberConvert( _expr().getRHS().getType(), type, rhs );
 
-    return new IRArithmeticExpression( getDescriptor( type ), lhs, rhs, IRArithmeticExpression.Operation.fromString( _expr().getOperator() ) );
+    return makeIRArithmeticExpression( type, lhs, rhs, isCheckedArithmeticEnabled() );
   }
 
-  final IRExpression primitiveSafeArithmetic()
+  private IRExpression makeIRArithmeticExpression( IType type, IRExpression lhs, IRExpression rhs, boolean checked )
   {
-    IType type = _expr().getType();
-
-    IRExpression lhs = ExpressionTransformer.compile( _expr().getLHS(), _cc() );
-    lhs = numberConvert( _expr().getLHS().getType(), type, lhs );
-
-    IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
-    rhs = numberConvert( _expr().getRHS().getType(), type, rhs );
     IRType descriptor = getDescriptor( type );
     IRArithmeticExpression.Operation op = IRArithmeticExpression.Operation.fromString( _expr().getOperator() );
-    if( ( type == JavaTypes.pINT() || type == JavaTypes.pLONG() ) && !_expr().isUnchecked() )
+    if( checked && ( type == JavaTypes.pINT() || type == JavaTypes.pLONG() ) && !_expr().isUnchecked() )
     {
       Class[] paramTypes = type == JavaTypes.pINT() ? new Class[]{int.class, int.class} : new Class[]{long.class, long.class};
       switch( op )
@@ -374,5 +362,11 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
       }
     }
     return new IRArithmeticExpression( descriptor, lhs, rhs, op );
+  }
+
+  private boolean isCheckedArithmeticEnabled()
+  {
+    DynamicFunctionSymbol currentFunction = _cc().getCurrentFunction();
+    return true && currentFunction != null && !"hashCode()".equals( currentFunction.getName() );
   }
 }

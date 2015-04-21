@@ -53,7 +53,7 @@ public abstract class Expression extends ParsedElement implements IExpression
   @Override
   public boolean isUnchecked()
   {
-    return false;
+    return true;
   }
 
   @Override
