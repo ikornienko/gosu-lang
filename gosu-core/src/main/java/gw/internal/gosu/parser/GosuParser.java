@@ -2418,10 +2418,12 @@ public final class GosuParser extends ParserBase implements IGosuParser
     {
       Token T = new Token();
       boolean bPlus = match( T, "+", SourceCodeTokenizer.TT_OPERATOR ) ||
-              match( T, "?+", SourceCodeTokenizer.TT_OPERATOR );
+                      match( T, "?+", SourceCodeTokenizer.TT_OPERATOR ) ||
+                      match( T, "!+", SourceCodeTokenizer.TT_OPERATOR );
       if( bPlus ||
               match( T, "-", SourceCodeTokenizer.TT_OPERATOR ) ||
-              match( T, "?-", SourceCodeTokenizer.TT_OPERATOR ))
+              match( T, "?-", SourceCodeTokenizer.TT_OPERATOR ) ||
+              match( T, "!-", SourceCodeTokenizer.TT_OPERATOR ))
       {
         parseMultiplicativeExpression();
 
@@ -2471,6 +2473,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
               match( T, "/", SourceCodeTokenizer.TT_OPERATOR ) ||
               match( T, "%", SourceCodeTokenizer.TT_OPERATOR ) ||
               match( T, "?*", SourceCodeTokenizer.TT_OPERATOR ) ||
+              match( T, "!*", SourceCodeTokenizer.TT_OPERATOR ) ||
               match( T, "?/", SourceCodeTokenizer.TT_OPERATOR ) ||
               match( T, "?%", SourceCodeTokenizer.TT_OPERATOR ) )
       {

@@ -357,7 +357,7 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
     rhs = numberConvert( _expr().getRHS().getType(), type, rhs );
     IRType descriptor = getDescriptor( type );
     IRArithmeticExpression.Operation op = IRArithmeticExpression.Operation.fromString( _expr().getOperator() );
-    if( type == JavaTypes.pINT() || type == JavaTypes.pLONG() )
+    if( ( type == JavaTypes.pINT() || type == JavaTypes.pLONG() ) && !_expr().isUnchecked() )
     {
       Class[] paramTypes = type == JavaTypes.pINT() ? new Class[]{int.class, int.class} : new Class[]{long.class, long.class};
       switch( op )

@@ -433,9 +433,9 @@ bitshiftOp :
           $t1.getCharPositionInLine() + 1 == $t2.getCharPositionInLine() }? 
     ;
 
-additiveOp : '+' | '-' | '?+' | '?-';
+additiveOp : '+' | '-' | '?+' | '?-' | '!+' | '!-';
 
-multiplicativeOp : '*' | '/' | '%' | '?*' | '?/' | '?%' ;
+multiplicativeOp : '*' | '/' | '%' | '?*' | '!*' | '?/' | '?%' ;
 
 typeAsOp : 'typeas' | 'as' ;
 
