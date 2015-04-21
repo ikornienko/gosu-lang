@@ -9,11 +9,14 @@ import gw.internal.gosu.ir.nodes.JavaClassIRType;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.BeanAccess;
+import gw.internal.gosu.parser.DynamicFunctionSymbol;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.expressions.ArithmeticExpression;
+import gw.internal.gosu.runtime.GosuRuntimeMethods;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
 import gw.lang.ir.expression.IRArithmeticExpression;
 import gw.lang.ir.expression.IRCompositeExpression;
 import gw.lang.ir.statement.IRAssignmentStatement;
@@ -52,7 +55,12 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
     {
       if( isPrimitiveArithmetic() )
       {
-        return primitiveArithmetic();
+        DynamicFunctionSymbol currentFunction = _cc().getCurrentFunction();
+        if(true && currentFunction != null && !"hashCode()".equals( currentFunction.getName() ) ) {
+          return primitiveSafeArithmetic();
+        } else {
+          return primitiveArithmetic();
+        }
       }
       else {
         IType lhsType = _expr().getLHS().getType();
@@ -336,5 +344,35 @@ abstract class ArithmeticExpressionTransformer<T extends ArithmeticExpression> e
     rhs = numberConvert( _expr().getRHS().getType(), type, rhs );
 
     return new IRArithmeticExpression( getDescriptor( type ), lhs, rhs, IRArithmeticExpression.Operation.fromString( _expr().getOperator() ) );
+  }
+
+  final IRExpression primitiveSafeArithmetic()
+  {
+    IType type = _expr().getType();
+
+    IRExpression lhs = ExpressionTransformer.compile( _expr().getLHS(), _cc() );
+    lhs = numberConvert( _expr().getLHS().getType(), type, lhs );
+
+    IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
+    rhs = numberConvert( _expr().getRHS().getType(), type, rhs );
+    IRType descriptor = getDescriptor( type );
+    IRArithmeticExpression.Operation op = IRArithmeticExpression.Operation.fromString( _expr().getOperator() );
+    if( type == JavaTypes.pINT() || type == JavaTypes.pLONG() )
+    {
+      Class[] paramTypes = type == JavaTypes.pINT() ? new Class[]{int.class, int.class} : new Class[]{long.class, long.class};
+      switch( op )
+      {
+         //todo: switch to  Math.xxExact instead when we move to Java 8
+        case Addition:
+          return callStaticMethod( GosuRuntimeMethods.class, "addExact", paramTypes, Arrays.asList( lhs, rhs ) );
+        case Subtraction:
+          return callStaticMethod( GosuRuntimeMethods.class, "subtractExact", paramTypes, Arrays.asList( lhs, rhs ) );
+        case Multiplication:
+          return callStaticMethod( GosuRuntimeMethods.class, "multiplyExact", paramTypes, Arrays.asList( lhs, rhs ) );
+        default:
+          return new IRArithmeticExpression( descriptor, lhs, rhs, op );
+      }
+    }
+    return new IRArithmeticExpression( descriptor, lhs, rhs, op );
   }
 }
